@@ -100,12 +100,11 @@ def my_method(img):
         for i in range(contour.shape[0]):
             points.append((contour[i][0][0], contour[i][0][1]))
         flag, (center, L) = check_square(points)
-        if flag:
+        if flag and L * 2 < min(img.shape[0], img.shape[1]):
             possible.append((L, center))
-        if flag:
             new_contours.append(contour)
-    img2 = img.copy()
-    cv2.drawContours(img2, new_contours, -1, (0, 255, 0), 1)
+    # img2 = img.copy()
+    # cv2.drawContours(img2, new_contours, -1, (0, 255, 0), 1)
     # show_image(img2, figsize=(20, 20))
     if len(possible) == 0:
         return False, (0, 0)
