@@ -1,6 +1,5 @@
-import os
-from pyzbar.pyzbar import decode
 from utils import *
+import qr_code
 
 
 #
@@ -11,28 +10,13 @@ from utils import *
 #       The input image to detect.
 #
 # Returns:
-#   qr_codes: list
-#       Each item of the list refers to a QR code in the original image. Each
-#       item is a list of four tuple(int, int), which refer to the four vertexes
-#       of this QR code rectangle(may be irregular).
-#       For example, if there are two QR codes, the qr_codes should be:
-#           [   [(0, 0), (10, 0), (10, 10), (0, 10)],
-#               [(20, 20), (20, 30), (30, 30), (30, 20)]    ]
-#       If qr_codes is empty, it means no QR code is detected from the image.
+#   flag: boolean
+#       Whether the QR code is detected.
+#   center: tuple(int, int)
+#       The center coordinate of the QR code.
 #
 def get_qr_code(img):
-    gray_img = get_gray(img)
-    res = decode(gray_img)
-    if len(res) == 0:
-        return False, []
-    # Currently only use the first detected QR code.
-    qr_codes = []
-    for tmp in res:
-        points = []
-        for p in tmp.polygon:
-            points.append((p.x, p.y))
-        qr_codes.append(points)
-    return qr_codes
+    return qr_code.get_qr_code(img)
 
 
 #
