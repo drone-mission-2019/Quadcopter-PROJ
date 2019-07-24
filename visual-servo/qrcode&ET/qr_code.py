@@ -24,7 +24,7 @@ def check_square(points):
     y0 = (y.max() + y.min()) / 2
     if x.max() - x.min() < 10 or y.max() - y.min() < 10:
         return False, ((0, 0), 0)
-    error = min(x.max() - x.min(), y.max() - y.min()) * 0.1
+    error = min(x.max() - x.min(), y.max() - y.min()) * 0.2
     dist = [(get_dist(point, (x0, y0)), point) for point in points]
     dist.sort(reverse=True)
     # print(dist)
