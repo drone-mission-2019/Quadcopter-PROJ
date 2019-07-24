@@ -52,6 +52,15 @@ def check_square(points):
                 mm = dd
         new_vertices.append(that)
     vertices = new_vertices
+    for i in range(4):
+        p1 = vertices[i]
+        p2 = vertices[0] if i == 3 else vertices[i + 1]
+        v1 = (p1[0] - x0, p1[1] - y0)
+        v2 = (p2[0] - x0, p2[1] - y0)
+        t1 = math.sqrt(abs(v1[0] * v2[0] + v1[1] * v2[1]))
+        if t1 > error * 2:
+            # pass
+            return False, ((0, 0), 0)
     # print(vertices)
     m = get_dist(vertices[0], vertices[1])
     n = get_dist(vertices[1], vertices[2])
@@ -92,14 +101,14 @@ def xiuzheng(min_x, max_x, min_y, max_y, x, y, shape):
     len_y = max_y - min_y
     if len_x < len_y * 0.9:
         if abs(x - min_x) < abs(x - max_x):
-            max_x = min(min_x + len_y, shape[0])
+            max_x = min_x + len_y
         else:
-            min_x = max(0, max_x - len_y)
+            min_x = max_x - len_y
     elif len_y < len_x * 0.9:
         if abs(y - min_y) < abs(y - max_y):
-            max_y = min(min_y + len_x, shape[1])
+            max_y = min_y + len_x
         else:
-            min_y = max(0, max_y - len_x)
+            min_y = max_y - len_x
     return min_x, max_x, min_y, max_y
 
 
@@ -109,6 +118,7 @@ def my_method(img):
     tmp = cv2.blur(th1, (2, 2))
     contours, hierarchy = cv2.findContours(tmp.copy(), cv2.RETR_TREE,
                                            cv2.CHAIN_APPROX_NONE)
+    # show_image(tmp, gray=True)
     possible = []
     new_contours = []
     for contour in contours:
@@ -139,17 +149,18 @@ def my_method(img):
     x = int((xx.max() + xx.min()) / 2)
     yy = np.array([p[1] for p in now])
     y = int((yy.max() + yy.min()) / 2)
-    ll = int(mm * 8)
+    ll = int(mm * 7)
     # show_image(tmp, gray=True)
     subimg = tmp.copy().T[max(0, x - ll): min(tmp.shape[1], x + ll), max(0, y - ll): min(tmp.shape[0], y + ll)]
+    subimg = 255 - subimg
     aa = subimg.sum(axis=1)
     bb = subimg.sum(axis=0)
-    aa_thresh = aa.min() + (aa.max() - aa.min()) * 0.95
-    bb_thresh = bb.min() + (bb.max() - bb.min()) * 0.95
-    aa[aa < aa_thresh] = 1
-    aa[aa >= aa_thresh] = 0
-    bb[bb < bb_thresh] = 1
-    bb[bb >= bb_thresh] = 0
+    aa_thresh = aa.min() + (aa.max() - aa.min()) * 0.15
+    bb_thresh = bb.min() + (bb.max() - bb.min()) * 0.15
+    aa[aa <= aa_thresh] = 0
+    aa[aa > aa_thresh] = 1
+    bb[bb <= bb_thresh] = 0
+    bb[bb > bb_thresh] = 1
     aa = aa.reshape(-1, 1)
     subimg = subimg * aa
     subimg = subimg * bb
