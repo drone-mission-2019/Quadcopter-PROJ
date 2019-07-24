@@ -27,11 +27,13 @@ def left_transformation(dimension_array, transplant, x, y, z):
 
 def trivial_transformation(clientID, x, y, z):
     relative_pos = [x, y, z]
-    vrep.simx
+    vrep.simxCreateDummy(clientID, 0, None, vrep.simx_opmode_blocking)
+    opcode, handle = vrep.simxGetObjectHandle(clientID, "Dummy#", vrep.simx_opmode_blocking)
+    opcode, left_zed = vrep.simxGetObjectHandle(clientID, "zed_vision1#", vrep.simx_opmode_blocking)
+    vrep.simxSetObjectPosition(clientID, handle, left_zed, relative_pos, vrep.simx_opmode_blocking)
+    opcode, absolute_pos = vrep.simxGetObjectPosition(clientID, handle, -1, vrep.simx_opmode_blocking)
+    return absolute_pos
     
-
-
-
 def toRadians(args):
     return math.radians(args)
 
@@ -57,8 +59,13 @@ def zedDistance(clientID, zed1, zed0):
     x_r = 0.0
     y_p = 0.0
 
-    x0, y0 = get_qr_code(zed0)
-    x1, y1 = get_qr_code(zed1)
+    tuple0, pos0 = get_qr_code(zed0) 
+    tuple1, pos1 = get_qr_code(zed1) 
+    if tuple0 == False or tuple1 == False:
+        return [-1, -1, -1]
+    x0, y0 = pos0
+    x1, y1 = pos1
+    
     x_l = x1 - P_x / 2
     x_r = x0 - P_x / 2
     y_p = P_y / 2 - (y0+y1) / 2
@@ -68,11 +75,21 @@ def zedDistance(clientID, zed1, zed0):
     x = (B * x_l) / (x_l - x_r)
     y = (B * P_x * math.tan(beta_rad / 2) * y_p) / ((x_l - x_r) * P_y * math.tan(alpha_rad / 2))
     z = (B * P_x / 2) / ((x_l - x_r) * math.tan(alpha_rad / 2))
-    print([x, y, z])
-
+    return trivial_transformation(clientID, -x, y, z)
 
 if __name__ == '__main__':
     img0 = cv2.imread('5zed0.jpg')
     img1 = cv2.imread('5zed1.jpg')
-    
-    zedDistance(0, img1, img0)
+    vrep.simxFinish(-1) #close all opened connections
+    clientID = vrep.simxStart('127.0.0.1', 19997, True, True, 5000, 5)
+    if clientID != -1:
+        print('Connected to Remote API Server...')
+        vrep.simxStartSimulation(clientID, vrep.simx_opmode_oneshot)
+        zedDistance(clientID, img1, img0) 
+        #res, retInt, retFloat, retString, retBuffer = vrep.simxCallScriptFunction(clientID, 'misson_landing', )
+        vrep.simxStopSimulation(clientID, vrep.simx_opmode_blocking)
+        vrep.simxFinish(clientID)
+    else:
+        print('Failed connecting to remote API server')
+        print('Program ended')
+        zedDistance(0, img1, img0)
