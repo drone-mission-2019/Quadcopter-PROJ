@@ -87,6 +87,22 @@ def fuck(now):
     return (that[0][0] + that[1][0]) / 2, (that[0][1] + that[1][1]) / 2
 
 
+def xiuzheng(min_x, max_x, min_y, max_y, x, y, shape):
+    len_x = max_x - min_x
+    len_y = max_y - min_y
+    if len_x < len_y * 0.9:
+        if abs(x - min_x) < abs(x - max_x):
+            max_x = min(min_x + len_y, shape[0])
+        else:
+            min_x = max(0, max_x - len_y)
+    elif len_y < len_x * 0.9:
+        if abs(y - min_y) < abs(y - max_y):
+            max_y = min(min_y + len_x, shape[1])
+        else:
+            min_y = max(0, max_y - len_x)
+    return min_x, max_x, min_y, max_y
+
+
 def my_method(img):
     gray = get_gray(img)
     ret, th1 = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
@@ -100,7 +116,7 @@ def my_method(img):
         for i in range(contour.shape[0]):
             points.append((contour[i][0][0], contour[i][0][1]))
         flag, (center, L) = check_square(points)
-        if flag and L * 2 < min(img.shape[0], img.shape[1]):
+        if flag and L * 5 < min(img.shape[0], img.shape[1]):
             possible.append((L, center))
             new_contours.append(contour)
     # img2 = img.copy()
@@ -117,17 +133,44 @@ def my_method(img):
             break
         now.append(center)
     # print(now)
-    if len(now) == 1:
-        return True, now[0]
-    if len(now) == 2:
-        return True, ((now[0][0] + now[1][0]) / 2, (now[0][1] + now[1][1]) / 2)
     if len(now) == 3:
         return True, fuck(now)
     xx = np.array([p[0] for p in now])
     x = int((xx.max() + xx.min()) / 2)
     yy = np.array([p[1] for p in now])
     y = int((yy.max() + yy.min()) / 2)
-    return True, (x, y)
+    ll = int(mm * 8)
+    # show_image(tmp, gray=True)
+    subimg = tmp.copy().T[max(0, x - ll): min(tmp.shape[1], x + ll), max(0, y - ll): min(tmp.shape[0], y + ll)]
+    aa = subimg.sum(axis=1)
+    bb = subimg.sum(axis=0)
+    aa_thresh = aa.min() + (aa.max() - aa.min()) * 0.95
+    bb_thresh = bb.min() + (bb.max() - bb.min()) * 0.95
+    aa[aa < aa_thresh] = 1
+    aa[aa >= aa_thresh] = 0
+    bb[bb < bb_thresh] = 1
+    bb[bb >= bb_thresh] = 0
+    aa = aa.reshape(-1, 1)
+    subimg = subimg * aa
+    subimg = subimg * bb
+    aa = (subimg.sum(axis=1) > 0)
+    min_x = 0
+    while not aa[min_x] and min_x < aa.shape[0]:
+        min_x += 1
+    max_x = aa.shape[0] - 1
+    while not aa[max_x] and max_x >= 0:
+        max_x -= 1
+    bb = (subimg.sum(axis=0) > 0)
+    min_y = 0
+    while not bb[min_y] and min_y < bb.shape[0]:
+        min_y += 1
+    max_y = bb.shape[0] - 1
+    while not bb[max_y] and max_y >= 0:
+        max_y -= 1
+    min_x, max_x, min_y, max_y = xiuzheng(min_x, max_x, min_y, max_y, x - max(0, x - ll), y - min(0, y - ll), tmp.T.shape)
+    xx = (min_x + max_x) / 2 + max(0, x - ll)
+    yy = (min_y + max_y) / 2 + max(0, y - ll)
+    return True, (xx, yy)
 
 
 def get_qr_code(img):
