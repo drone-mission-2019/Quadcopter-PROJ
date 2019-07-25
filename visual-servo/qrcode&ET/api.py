@@ -20,6 +20,58 @@ def get_qr_code(img):
 
 
 #
+# API to detect cylinder im images.
+#
+# Parameters:
+#   img: (m * n * 3) numpy ndarray of RGB format
+#       The input image to detect.
+#
+# Returns:
+#   flag: boolean
+#       Whether the cylinder is detected.
+#   pos: tuple(int, int)
+#       The position of the cylinder.
+#
+def get_cylinder(img):
+    if img.shape[0] < 20 or img.shape[1] < 20:
+        return False, (0, 0)
+    img2 = np.zeros((img.shape[0], img.shape[1]))
+    t1 = img[:, :, 0] / 2 - img[:, :, 1]
+    t2 = img[:, :, 0] / 2 - img[:, :, 2]
+    img2[(t1 > 0) * (t2 > 0) * (img[:, :, 0] > 150)] = 255
+    L = 10
+    aa = img2.sum(axis=1)
+    mm = -1e8
+    that1 = (0, 0)
+    for i in range(img.shape[0]):
+        l = i
+        r = i + L
+        if r > img.shape[0]:
+            break
+        tmp = aa[l: r].sum()
+        if tmp > mm:
+            mm = tmp
+            that1 = (l, r)
+    bb = img2.sum(axis=0)
+    mm = -1e8
+    that2 = (0, 0)
+    for i in range(img.shape[1]):
+        l = i
+        r = i + L
+        if r > img.shape[1]:
+            break
+        tmp = bb[l: r].sum()
+        if tmp > mm:
+            mm = tmp
+            that2 = (l, r)
+    if that1 == (0, 0) or that2 == (0, 0):
+        return False, (0, 0)
+    x = int((that1[0] + that1[1]) / 2)
+    y = int((that2[0] + that2[1]) / 2)
+    return True, (y, x)
+
+
+#
 # API to detect target(T) and end(E) in images.
 #
 # Parameters:
@@ -81,3 +133,11 @@ def get_E_or_T(img):
     elif len(cc2) == 4:
         ans = 'E'
     return (min_x, min_y, max_x, max_y), ans
+
+
+if __name__ == '__main__':
+    from utils import *
+    img = read_image('testcase/cylinder.jpg')
+    print(img.shape)
+    flag, pos = get_cylinder(img)
+    print(flag, pos)
