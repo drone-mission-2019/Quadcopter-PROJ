@@ -71,7 +71,7 @@ def zedDistance(clientID, zed1, zed0):
     print(pos1)
 
     if tuple0 == False or tuple1 == False:
-        return [-1, -1, -1]
+        return None
     x0, y0 = pos0
     x1, y1 = pos1
     
@@ -81,6 +81,10 @@ def zedDistance(clientID, zed1, zed0):
 
     alpha_rad = toRadians(alpha)
     beta_rad = toRadians(beta)
+
+    if x_l == x_r:
+        x_l += 1
+    
     x = (B * x_l) / (x_l - x_r)
     y = (B * P_x * math.tan(beta_rad / 2) * y_p) / ((x_l - x_r) * P_y * math.tan(alpha_rad / 2))
     z = (B * P_x / 2) / ((x_l - x_r) * math.tan(alpha_rad / 2))
