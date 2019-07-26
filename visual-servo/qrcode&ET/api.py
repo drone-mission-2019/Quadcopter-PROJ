@@ -79,13 +79,10 @@ def get_cylinder(img):
 #       The input image to detect.
 #
 # Returns:
-#   results: list
-#       A list of detection results. Each item is the following format:
-#           ((min_x, min_y, max_x, max_y), letter)
-#       For example:
-#           [   ((0, 0, 10, 10), 'T'), ((20, 20, 40, 50), 'E')  ]
-#       The above example results means that there's a 'T' and an 'E' in the
-#       original image.
+#   flag: boolean
+#       Whether E or T is detected.
+#   results: tuple(tuple(int, int, int, int), str)
+#       The first tuple is (min_x, min_y, max_x, max_y).
 #       The letter may be '?', which means it's hard to determine whether it is
 #       'T' or 'E'.
 #
@@ -110,9 +107,8 @@ def get_E_or_T(img):
         if hh[j][0] != -1 or hh[j][1] != -1 or hh[j][2] != -1:
             continue
         that.append(i)
-    if len(that) != 1:
-        for i in range(10):
-            print('Error')
+    if len(that) < 0:
+        return False, ((0, 0, 0, 0), '?')
     cc = contours[that[0]]
     min_x = cc.min(axis=0)[0][0]
     min_y = cc.min(axis=0)[0][1]
@@ -132,7 +128,7 @@ def get_E_or_T(img):
         ans = 'T'
     elif len(cc2) == 4:
         ans = 'E'
-    return (min_x, min_y, max_x, max_y), ans
+    return True, ((min_x, min_y, max_x, max_y), ans)
 
 
 if __name__ == '__main__':
