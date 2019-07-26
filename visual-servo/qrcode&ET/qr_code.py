@@ -112,6 +112,38 @@ def xiuzheng(min_x, max_x, min_y, max_y, x, y, shape):
     return min_x, max_x, min_y, max_y
 
 
+def check_all(subimg):
+    subimg = 255 - subimg
+    aa = subimg.sum(axis=1)
+    bb = subimg.sum(axis=0)
+    aa_thresh = aa.min() + (aa.max() - aa.min()) * 0.2
+    bb_thresh = bb.min() + (bb.max() - bb.min()) * 0.2
+    aa[aa <= aa_thresh] = 0
+    aa[aa > aa_thresh] = 1
+    bb[bb <= bb_thresh] = 0
+    bb[bb > bb_thresh] = 1
+    aa = aa.reshape(-1, 1)
+    subimg = subimg * aa
+    subimg = subimg * bb
+    aa = (subimg.sum(axis=1) > 0)
+    min_x = 0
+    while not aa[min_x] and min_x < aa.shape[0]:
+        min_x += 1
+    max_x = aa.shape[0] - 1
+    while not aa[max_x] and max_x >= 0:
+        max_x -= 1
+    bb = (subimg.sum(axis=0) > 0)
+    min_y = 0
+    while not bb[min_y] and min_y < bb.shape[0]:
+        min_y += 1
+    max_y = bb.shape[0] - 1
+    while not bb[max_y] and max_y >= 0:
+        max_y -= 1
+    if max_x - min_x > subimg.shape[0] * 0.8 and max_y - min_y > subimg.shape[1] * 0.8:
+        return True
+    return False
+
+
 def my_method(img):
     gray = get_gray(img)
     ret, th1 = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
@@ -119,6 +151,8 @@ def my_method(img):
     contours, hierarchy = cv2.findContours(tmp.copy(), cv2.RETR_TREE,
                                            cv2.CHAIN_APPROX_NONE)
     # show_image(tmp, gray=True)
+    if check_all(tmp.copy()):
+        return True, (img.shape[1] / 2, img.shape[0] / 2)
     possible = []
     new_contours = []
     for contour in contours:
