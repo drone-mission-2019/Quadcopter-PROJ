@@ -24,7 +24,7 @@ def check_square(points):
     y0 = (y.max() + y.min()) / 2
     if x.max() - x.min() < 10 or y.max() - y.min() < 10:
         return False, ((0, 0), 0)
-    error = min(x.max() - x.min(), y.max() - y.min()) * 0.1
+    error = min(x.max() - x.min(), y.max() - y.min()) * 0.2
     dist = [(get_dist(point, (x0, y0)), point) for point in points]
     dist.sort(reverse=True)
     # print(dist)
@@ -52,6 +52,15 @@ def check_square(points):
                 mm = dd
         new_vertices.append(that)
     vertices = new_vertices
+    for i in range(4):
+        p1 = vertices[i]
+        p2 = vertices[0] if i == 3 else vertices[i + 1]
+        v1 = (p1[0] - x0, p1[1] - y0)
+        v2 = (p2[0] - x0, p2[1] - y0)
+        t1 = math.sqrt(abs(v1[0] * v2[0] + v1[1] * v2[1]))
+        if t1 > error * 2:
+            # pass
+            return False, ((0, 0), 0)
     # print(vertices)
     m = get_dist(vertices[0], vertices[1])
     n = get_dist(vertices[1], vertices[2])
@@ -87,12 +96,63 @@ def fuck(now):
     return (that[0][0] + that[1][0]) / 2, (that[0][1] + that[1][1]) / 2
 
 
+def xiuzheng(min_x, max_x, min_y, max_y, x, y, shape):
+    len_x = max_x - min_x
+    len_y = max_y - min_y
+    if len_x < len_y * 0.9:
+        if abs(x - min_x) < abs(x - max_x):
+            max_x = min_x + len_y
+        else:
+            min_x = max_x - len_y
+    elif len_y < len_x * 0.9:
+        if abs(y - min_y) < abs(y - max_y):
+            max_y = min_y + len_x
+        else:
+            min_y = max_y - len_x
+    return min_x, max_x, min_y, max_y
+
+
+def check_all(subimg):
+    subimg = 255 - subimg
+    aa = subimg.sum(axis=1)
+    bb = subimg.sum(axis=0)
+    aa_thresh = aa.min() + (aa.max() - aa.min()) * 0.2
+    bb_thresh = bb.min() + (bb.max() - bb.min()) * 0.2
+    aa[aa <= aa_thresh] = 0
+    aa[aa > aa_thresh] = 1
+    bb[bb <= bb_thresh] = 0
+    bb[bb > bb_thresh] = 1
+    aa = aa.reshape(-1, 1)
+    subimg = subimg * aa
+    subimg = subimg * bb
+    aa = (subimg.sum(axis=1) > 0)
+    min_x = 0
+    while not aa[min_x] and min_x < aa.shape[0]:
+        min_x += 1
+    max_x = aa.shape[0] - 1
+    while not aa[max_x] and max_x >= 0:
+        max_x -= 1
+    bb = (subimg.sum(axis=0) > 0)
+    min_y = 0
+    while not bb[min_y] and min_y < bb.shape[0]:
+        min_y += 1
+    max_y = bb.shape[0] - 1
+    while not bb[max_y] and max_y >= 0:
+        max_y -= 1
+    if max_x - min_x > subimg.shape[0] * 0.8 and max_y - min_y > subimg.shape[1] * 0.8:
+        return True
+    return False
+
+
 def my_method(img):
     gray = get_gray(img)
     ret, th1 = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
     tmp = cv2.blur(th1, (2, 2))
     contours, hierarchy = cv2.findContours(tmp.copy(), cv2.RETR_TREE,
                                            cv2.CHAIN_APPROX_NONE)
+    # show_image(tmp, gray=True)
+    if check_all(tmp.copy()):
+        return True, (img.shape[1] / 2, img.shape[0] / 2)
     possible = []
     new_contours = []
     for contour in contours:
@@ -100,7 +160,7 @@ def my_method(img):
         for i in range(contour.shape[0]):
             points.append((contour[i][0][0], contour[i][0][1]))
         flag, (center, L) = check_square(points)
-        if flag and L * 2 < min(img.shape[0], img.shape[1]):
+        if flag and L * 5 < min(img.shape[0], img.shape[1]):
             possible.append((L, center))
             new_contours.append(contour)
     # img2 = img.copy()
@@ -117,17 +177,45 @@ def my_method(img):
             break
         now.append(center)
     # print(now)
-    if len(now) == 1:
-        return True, now[0]
-    if len(now) == 2:
-        return True, ((now[0][0] + now[1][0]) / 2, (now[0][1] + now[1][1]) / 2)
     if len(now) == 3:
         return True, fuck(now)
     xx = np.array([p[0] for p in now])
     x = int((xx.max() + xx.min()) / 2)
     yy = np.array([p[1] for p in now])
     y = int((yy.max() + yy.min()) / 2)
-    return True, (x, y)
+    ll = int(mm * 7)
+    # show_image(tmp, gray=True)
+    subimg = tmp.copy().T[max(0, x - ll): min(tmp.shape[1], x + ll), max(0, y - ll): min(tmp.shape[0], y + ll)]
+    subimg = 255 - subimg
+    aa = subimg.sum(axis=1)
+    bb = subimg.sum(axis=0)
+    aa_thresh = aa.min() + (aa.max() - aa.min()) * 0.15
+    bb_thresh = bb.min() + (bb.max() - bb.min()) * 0.15
+    aa[aa <= aa_thresh] = 0
+    aa[aa > aa_thresh] = 1
+    bb[bb <= bb_thresh] = 0
+    bb[bb > bb_thresh] = 1
+    aa = aa.reshape(-1, 1)
+    subimg = subimg * aa
+    subimg = subimg * bb
+    aa = (subimg.sum(axis=1) > 0)
+    min_x = 0
+    while not aa[min_x] and min_x < aa.shape[0]:
+        min_x += 1
+    max_x = aa.shape[0] - 1
+    while not aa[max_x] and max_x >= 0:
+        max_x -= 1
+    bb = (subimg.sum(axis=0) > 0)
+    min_y = 0
+    while not bb[min_y] and min_y < bb.shape[0]:
+        min_y += 1
+    max_y = bb.shape[0] - 1
+    while not bb[max_y] and max_y >= 0:
+        max_y -= 1
+    min_x, max_x, min_y, max_y = xiuzheng(min_x, max_x, min_y, max_y, x - max(0, x - ll), y - min(0, y - ll), tmp.T.shape)
+    xx = (min_x + max_x) / 2 + max(0, x - ll)
+    yy = (min_y + max_y) / 2 + max(0, y - ll)
+    return True, (xx, yy)
 
 
 def get_qr_code(img):
