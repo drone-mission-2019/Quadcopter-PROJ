@@ -16,14 +16,14 @@ def check_square(points):
     points = list(set(points))
     n = len(points)
     if n < 4:
-        return False, ((0, 0), 0)
+        return False, ((0, 0), 0, [])
     # print(points)
     x = np.array([point[0] for point in points])
     y = np.array([point[1] for point in points])
     x0 = (x.max() + x.min()) / 2
     y0 = (y.max() + y.min()) / 2
     if x.max() - x.min() < 10 or y.max() - y.min() < 10:
-        return False, ((0, 0), 0)
+        return False, ((0, 0), 0, [])
     error = min(x.max() - x.min(), y.max() - y.min()) * 0.2
     dist = [(get_dist(point, (x0, y0)), point) for point in points]
     dist.sort(reverse=True)
@@ -60,14 +60,14 @@ def check_square(points):
         t1 = math.sqrt(abs(v1[0] * v2[0] + v1[1] * v2[1]))
         if t1 > error * 2:
             # pass
-            return False, ((0, 0), 0)
+            return False, ((0, 0), 0, [])
     # print(vertices)
     m = get_dist(vertices[0], vertices[1])
     n = get_dist(vertices[1], vertices[2])
     if m > n:
         m, n = n, m
     if m * 1.5 < n:
-        return False, ((0, 0), 0)
+        return False, ((0, 0), 0, [])
     for point in points:
         flag = False
         for i in range(4):
@@ -79,8 +79,8 @@ def check_square(points):
             if d < error:
                 flag = True
         if not flag:
-            return False, ((0, 0), 0)
-    return True, ((x0, y0), (m + n) / 2.0)
+            return False, ((0, 0), 0, [])
+    return True, ((x0, y0), (m + n) / 2.0, vertices)
 
 
 def fuck(now):
@@ -94,22 +94,6 @@ def fuck(now):
             mm = d
             that = (p1, p2)
     return (that[0][0] + that[1][0]) / 2, (that[0][1] + that[1][1]) / 2
-
-
-def xiuzheng(min_x, max_x, min_y, max_y, x, y, shape):
-    len_x = max_x - min_x
-    len_y = max_y - min_y
-    if len_x < len_y * 0.9:
-        if abs(x - min_x) < abs(x - max_x):
-            max_x = min_x + len_y
-        else:
-            min_x = max_x - len_y
-    elif len_y < len_x * 0.9:
-        if abs(y - min_y) < abs(y - max_y):
-            max_y = min_y + len_x
-        else:
-            min_y = max_y - len_x
-    return min_x, max_x, min_y, max_y
 
 
 def check_all(subimg):
@@ -144,6 +128,71 @@ def check_all(subimg):
     return False
 
 
+def in_img(P, img):
+    if P[0] < 0 or P[1] >= img.shape[0]:
+        return False
+    if P[1] < 0 or P[1] >= img.shape[1]:
+        return False
+    return True
+
+
+def in_qrcode(P, L, img):
+    if not in_img(P, img):
+        return False
+    subimg = img[int(P[0] - L / 2): int(P[0] + L / 2), int(P[1] - L / 2): int(P[1] + L / 2)]
+    tot = subimg.shape[0] * subimg.shape[1]
+    black = (subimg == 0).sum()
+    rate = black / tot
+    if 0.2 < rate < 0.8:
+        return True
+    return False
+
+
+def fuck_all(now2, img):
+    L = now2[0][0]
+    A = now2[0][1]
+    B = now2[1][1]
+    mid = ((A[0] + B[0]) / 2, (A[1] + B[1]) / 2)
+    v = (-(B[1] - A[1]), B[0] - A[0])
+    v_norm = get_norm(v)
+    v = (v[0] / v_norm, v[1] / v_norm)
+    go_len = get_dist(A, B) / 2
+    P = (mid[0] + v[0] * go_len, mid[1] + v[1] * go_len)
+    Q = (mid[0] - v[0] * go_len, mid[1] - v[1] * go_len)
+    # print(P, Q)
+    if in_qrcode(P, L, img):
+        return True, P
+    if in_qrcode(Q, L, img):
+        return True, Q
+    if in_img(P, img):
+        return True, Q
+    if in_img(Q, img):
+        return True, P
+    return False, ('fuck', 'fuck')
+
+
+def fuck_all_of_you(now3, img):
+    rate = 4.7739
+    L, center, vertices = now3[0]
+    possible = []
+    for vertex in vertices:
+        v = (vertex[0] - center[0], vertex[1] - center[1])
+        P = (center[0] + rate * v[0], center[1] + rate * v[1])
+        possible.append(P)
+    for P in possible:
+        if in_qrcode(P, L, img):
+            return True, P
+    num = 0
+    for P in possible:
+        if in_img(P, img):
+            num += 1
+    if num == 3:
+        for P in possible:
+            if not in_img(P, img):
+                return True, P
+    return False, (0, 0)
+
+
 def my_method(img):
     gray = get_gray(img)
     ret, th1 = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
@@ -159,9 +208,9 @@ def my_method(img):
         points = []
         for i in range(contour.shape[0]):
             points.append((contour[i][0][0], contour[i][0][1]))
-        flag, (center, L) = check_square(points)
+        flag, (center, L, vertices) = check_square(points)
         if flag and L * 5 < min(img.shape[0], img.shape[1]):
-            possible.append((L, center))
+            possible.append((L, center, vertices))
             new_contours.append(contour)
     # img2 = img.copy()
     # cv2.drawContours(img2, new_contours, -1, (0, 255, 0), 1)
@@ -172,50 +221,22 @@ def my_method(img):
     mm = possible[0][0]
     # print(possible)
     now = []
-    for i, (L, center) in enumerate(possible):
+    now2 = []
+    now3 = []
+    for i, (L, center, vertices) in enumerate(possible):
         if L < mm * 0.9:
             break
         now.append(center)
-    # print(now)
+        now2.append((L, center))
+        now3.append((L, center, vertices))
+    # print(now3)
     if len(now) == 3:
         return True, fuck(now)
-    xx = np.array([p[0] for p in now])
-    x = int((xx.max() + xx.min()) / 2)
-    yy = np.array([p[1] for p in now])
-    y = int((yy.max() + yy.min()) / 2)
-    ll = int(mm * 7)
-    # show_image(tmp, gray=True)
-    subimg = tmp.copy().T[max(0, x - ll): min(tmp.shape[1], x + ll), max(0, y - ll): min(tmp.shape[0], y + ll)]
-    subimg = 255 - subimg
-    aa = subimg.sum(axis=1)
-    bb = subimg.sum(axis=0)
-    aa_thresh = aa.min() + (aa.max() - aa.min()) * 0.15
-    bb_thresh = bb.min() + (bb.max() - bb.min()) * 0.15
-    aa[aa <= aa_thresh] = 0
-    aa[aa > aa_thresh] = 1
-    bb[bb <= bb_thresh] = 0
-    bb[bb > bb_thresh] = 1
-    aa = aa.reshape(-1, 1)
-    subimg = subimg * aa
-    subimg = subimg * bb
-    aa = (subimg.sum(axis=1) > 0)
-    min_x = 0
-    while not aa[min_x] and min_x < aa.shape[0]:
-        min_x += 1
-    max_x = aa.shape[0] - 1
-    while not aa[max_x] and max_x >= 0:
-        max_x -= 1
-    bb = (subimg.sum(axis=0) > 0)
-    min_y = 0
-    while not bb[min_y] and min_y < bb.shape[0]:
-        min_y += 1
-    max_y = bb.shape[0] - 1
-    while not bb[max_y] and max_y >= 0:
-        max_y -= 1
-    min_x, max_x, min_y, max_y = xiuzheng(min_x, max_x, min_y, max_y, x - max(0, x - ll), y - min(0, y - ll), tmp.T.shape)
-    xx = (min_x + max_x) / 2 + max(0, x - ll)
-    yy = (min_y + max_y) / 2 + max(0, y - ll)
-    return True, (xx, yy)
+    if len(now) == 2:
+        return fuck_all(now2, tmp.copy().T)
+    if len(now) == 1:
+        return fuck_all_of_you(now3, tmp.copy().T)
+    return False, (0, 0)
 
 
 def get_qr_code(img):
