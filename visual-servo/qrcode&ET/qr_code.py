@@ -150,11 +150,29 @@ def in_qrcode(P, L, img):
     return False
 
 
+def check_duijiao(now, img):
+    # print(now)
+    A = now[0][1]
+    B = now[1][1]
+    vertices = now[0][2]
+    v = (A[0] - B[0], A[1] - B[1])
+    v = (v[0] / get_norm(v), v[1] / get_norm(v))
+    for vertex in vertices:
+        w = (A[0] - vertex[0], A[1] - vertex[1])
+        w = (w[0] / get_norm(w), w[1] / get_norm(w))
+        tmp = abs(v[0] * w[1] - v[1] * w[0])
+        if tmp < 0.15:
+            return True
+    return False
+
+
 def fuck_all(now2, img):
     L = now2[0][0]
     A = now2[0][1]
     B = now2[1][1]
     mid = ((A[0] + B[0]) / 2, (A[1] + B[1]) / 2)
+    if check_duijiao(now2, img):
+        return True, mid
     v = (-(B[1] - A[1]), B[0] - A[0])
     v_norm = get_norm(v)
     v = (v[0] / v_norm, v[1] / v_norm)
@@ -235,7 +253,7 @@ def my_method(img):
     if len(now) == 3:
         return True, fuck(now)
     if len(now) == 2:
-        return fuck_all(now2, tmp.copy().T)
+        return fuck_all(now3, tmp.copy().T)
     if len(now) == 1:
         return fuck_all_of_you(now3, tmp.copy().T)
     return False, (0, 0)
