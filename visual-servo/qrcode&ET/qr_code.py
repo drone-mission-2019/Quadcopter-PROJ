@@ -111,14 +111,14 @@ def check_all(subimg):
     subimg = subimg * bb
     aa = (subimg.sum(axis=1) > 0)
     min_x = 0
-    while not aa[min_x] and min_x < aa.shape[0]:
+    while min_x < aa.shape[0] and not aa[min_x]:
         min_x += 1
     max_x = aa.shape[0] - 1
     while not aa[max_x] and max_x >= 0:
         max_x -= 1
     bb = (subimg.sum(axis=0) > 0)
     min_y = 0
-    while not bb[min_y] and min_y < bb.shape[0]:
+    while min_y < bb.shape[0] and not bb[min_y]:
         min_y += 1
     max_y = bb.shape[0] - 1
     while not bb[max_y] and max_y >= 0:
@@ -142,6 +142,8 @@ def in_qrcode(P, L, img):
     subimg = img[int(P[0] - L / 2): int(P[0] + L / 2), int(P[1] - L / 2): int(P[1] + L / 2)]
     tot = subimg.shape[0] * subimg.shape[1]
     black = (subimg == 0).sum()
+    if tot == 0:
+        return False
     rate = black / tot
     if 0.2 < rate < 0.8:
         return True
