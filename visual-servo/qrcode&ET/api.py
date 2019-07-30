@@ -152,16 +152,17 @@ def get_people(img, eye):
     img2 = img.copy()
     img2[np.abs(img2 - fuck1).max(axis=2) < 20] = [255, 255, 255]
     img2[np.abs(img2 - fuck2).max(axis=2) < 20] = [255, 255, 255]
-    tmp = img[:, :, 0].astype(np.int64) + img[:, :, 1] + img[:, :, 2]
-    img2 = img.copy()
-    img2[tmp > 500] = [255, 255, 255]
+    tmp = img2[:, :, 0].astype(np.int64) + img2[:, :, 1] + img2[:, :, 2]
+    img2[tmp > 700] = [255, 255, 255]
     img2 = cv2.resize(img2, (320, 180))
     # print(img2.shape)
     if eye:
         img2[:30, 275:] = [255, 255, 255]
-        img2[:23, :25] = [255, 255, 255]
+        img2[:60, :35] = [255, 255, 255]
     else:
-        img2[:30, 125:160] = [255, 255, 255]
+        img2[:30, 125:170] = [255, 255, 255]
+        img2[:30, 300:] = [255, 255, 255]
+    # show_image(img2)
     visit = np.zeros((img2.shape[0], img2.shape[1]))
     belong = np.zeros(visit.shape)
     cnt = 0
@@ -203,6 +204,7 @@ def get_people(img, eye):
             new_points.append(pp)
             for p in pp:
                 img3[p[0], p[1]] = img2[p[0], p[1]]
+    # show_image(img3)
     ans = []
     for pp in new_points:
         x = np.array([t[0] for t in pp]).mean()
