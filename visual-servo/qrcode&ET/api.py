@@ -149,11 +149,13 @@ def get_E_or_T(img):
 def get_people(img, eye):
     fuck1 = np.array([172.87, 182.88, 188.63])
     fuck2 = np.array([189.49, 198.48, 204.345])
+    fuck1_all = np.array([188.63, 182.88, 172.87])
+    fuck2_all = np.array([204.345, 198.48, 189.49])
     img2 = img.copy()
     tmp = (img2 < 2).sum(axis=2)
     img2[tmp == 3] = [255, 255, 255]
-    img2[np.abs(img2 - fuck1).max(axis=2) < 20] = [255, 255, 255]
-    img2[np.abs(img2 - fuck2).max(axis=2) < 20] = [255, 255, 255]
+    img2[np.abs(img2 - fuck1_all).max(axis=2) < 20] = [255, 255, 255]
+    img2[np.abs(img2 - fuck2_all).max(axis=2) < 20] = [255, 255, 255]
     tmp = img2[:, :, 0].astype(np.int64) + img2[:, :, 1] + img2[:, :, 2]
     img2[tmp > 700] = [255, 255, 255]
     img2 = cv2.resize(img2, (320, 180))
@@ -206,7 +208,7 @@ def get_people(img, eye):
             new_points.append(pp)
             for p in pp:
                 img3[p[0], p[1]] = img2[p[0], p[1]]
-    show_image(img3)
+    # show_image(img3)
     ans = []
     for pp in new_points:
         x = np.array([t[0] for t in pp]).mean()
