@@ -1,5 +1,6 @@
 from utils import *
 import qr_code
+from queue import Queue
 
 
 #
@@ -131,9 +132,85 @@ def get_E_or_T(img):
     return True, ((min_x, min_y, max_x, max_y), ans)
 
 
+#
+# API to detect target(T) and end(E) in images.
+#
+# Parameters:
+#   img: (m * n * 3) numpy ndarray of RGB format
+#       The input image to detect.
+#   eye: boolean
+#       eye=True: left eye.
+#       eye=False: right eye.
+#
+# Returns:
+#   people: list of tuple(int, int)
+#       Each tuple represent a coordinate of people.
+#
+def get_people(img, eye):
+    fuck1 = np.array([172.87, 182.88, 188.63])
+    fuck2 = np.array([189.49, 198.48, 204.345])
+    img2 = img.copy()
+    img2[np.abs(img2 - fuck1).max(axis=2) < 20] = [255, 255, 255]
+    img2[np.abs(img2 - fuck2).max(axis=2) < 20] = [255, 255, 255]
+    tmp = img[:, :, 0].astype(np.int64) + img[:, :, 1] + img[:, :, 2]
+    img2 = img.copy()
+    img2[tmp > 500] = [255, 255, 255]
+    img2 = cv2.resize(img2, (320, 180))
+    # print(img2.shape)
+    if eye:
+        img2[:30, 275:] = [255, 255, 255]
+        img2[:23, :25] = [255, 255, 255]
+    else:
+        img2[:30, 125:160] = [255, 255, 255]
+    visit = np.zeros((img2.shape[0], img2.shape[1]))
+    belong = np.zeros(visit.shape)
+    cnt = 0
+    for i in range(img2.shape[0]):
+        for j in range(img2.shape[1]):
+            if not visit[i, j] and (img2[i, j] == 255).sum() < 3:
+                Q = Queue()
+                Q.put((i, j))
+                visit[i, j] = 1
+                cnt += 1
+                belong[i, j] = cnt
+                dx = [-1, 0, 0, 1]
+                dy = [0, -1, 1, 0]
+                while not Q.empty():
+                    x, y = Q.get()
+                    for k in range(4):
+                        xx = x + dx[k]
+                        yy = y + dy[k]
+                        if xx < 0 or xx >= img2.shape[0] or yy < 0 or yy >= \
+                                img2.shape[1]:
+                            continue
+                        if visit[xx, yy] == 1 or (
+                                img2[xx, yy] == 255).sum() == 3:
+                            continue
+                        visit[xx, yy] = 1
+                        belong[xx, yy] = cnt
+                        Q.put((xx, yy))
+    points = [[] for i in range(cnt + 1)]
+    for i in range(img2.shape[0]):
+        for j in range(img2.shape[1]):
+            if belong[i, j] > 0:
+                points[int(belong[i, j])].append((i, j))
+    img3 = img2.copy()
+    img3[:, :] = [255, 255, 255]
+    threshold = 300
+    new_points = []
+    for pp in points:
+        if len(pp) > threshold:
+            new_points.append(pp)
+            for p in pp:
+                img3[p[0], p[1]] = img2[p[0], p[1]]
+    ans = []
+    for pp in new_points:
+        x = np.array([t[0] for t in pp]).mean()
+        y = np.array([t[1] for t in pp]).mean()
+        ans.append((int(y * 4 + 2), int(x * 4 + 2)))
+    return ans
+
+
 if __name__ == '__main__':
-    from utils import *
-    img = read_image('testcase/cylinder.jpg')
-    print(img.shape)
-    flag, pos = get_cylinder(img)
-    print(flag, pos)
+    img = read_image('testcase/zuoyan.jpeg')
+    print(get_people(img, True))
