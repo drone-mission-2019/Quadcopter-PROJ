@@ -1,6 +1,7 @@
 from utils import *
 import qr_code
 from queue import Queue
+from sklearn.cluster import KMeans
 
 
 #
@@ -166,7 +167,7 @@ def get_people(img, eye):
     else:
         img2[:30, 125:170] = [255, 255, 255]
         img2[:30, 300:] = [255, 255, 255]
-    show_image(img2)
+    # show_image(img2)
     visit = np.zeros((img2.shape[0], img2.shape[1]))
     belong = np.zeros(visit.shape)
     cnt = 0
@@ -213,7 +214,20 @@ def get_people(img, eye):
     for pp in new_points:
         x = np.array([t[0] for t in pp]).mean()
         y = np.array([t[1] for t in pp]).mean()
-        ans.append((int(y * 4 + 2), int(x * 4 + 2)))
+        X = np.zeros((len(pp), 3))
+        for i, p in enumerate(pp):
+            color = img3[p[0], p[1]]
+            X[i] = color
+        # print(X)
+        kmeans = KMeans(n_clusters=3, random_state=0).fit(X)
+        # print(kmeans.cluster_centers_)
+        # print(kmeans.labels_)
+        num = np.zeros(3)
+        for label in kmeans.labels_:
+            num[label] += 1
+        t = num.argmax()
+        color = kmeans.cluster_centers_[t]
+        ans.append(((int(y * 4 + 2), int(x * 4 + 2)), color))
     return ans
 
 
