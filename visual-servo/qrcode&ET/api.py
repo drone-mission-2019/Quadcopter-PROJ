@@ -41,35 +41,25 @@ def get_cylinder(img):
     t1 = img[:, :, 0] / 2 - img[:, :, 1]
     t2 = img[:, :, 0] / 2 - img[:, :, 2]
     img2[(t1 > 0) * (t2 > 0) * (img[:, :, 0] > 150)] = 255
-    L = 10
+    # show_image(img2, gray=True)
     aa = img2.sum(axis=1)
-    mm = -1e8
-    that1 = (0, 0)
-    for i in range(img.shape[0]):
-        l = i
-        r = i + L
-        if r > img.shape[0]:
-            break
-        tmp = aa[l: r].sum()
-        if tmp > mm:
-            mm = tmp
-            that1 = (l, r)
-    bb = img2.sum(axis=0)
-    mm = -1e8
-    that2 = (0, 0)
-    for i in range(img.shape[1]):
-        l = i
-        r = i + L
-        if r > img.shape[1]:
-            break
-        tmp = bb[l: r].sum()
-        if tmp > mm:
-            mm = tmp
-            that2 = (l, r)
-    if that1 == (0, 0) or that2 == (0, 0):
-        return False, (0, 0)
-    x = int((that1[0] + that1[1]) / 2)
-    y = int((that2[0] + that2[1]) / 2)
+    threshold = aa.max() * 0.8
+    l = 0
+    while aa[l] < threshold:
+        l += 1
+    r = aa.shape[0] - 1
+    while aa[r] < threshold:
+        r -= 1
+    x = int((l + r) / 2)
+    aa = img2.sum(axis=0)
+    threshold = aa.max() * 0.8
+    l = 0
+    while aa[l] < threshold:
+        l += 1
+    r = aa.shape[0] - 1
+    while aa[r] < threshold:
+        r -= 1
+    y = int((l + r) / 2)
     return True, (y, x)
 
 
@@ -226,6 +216,9 @@ def get_people(img, eye):
         for label in kmeans.labels_:
             num[label] += 1
         t = num.argmax()
+        # for i, label in enumerate(kmeans.labels_):
+        #     if label == t:
+        #         print(X[i])
         color = kmeans.cluster_centers_[t]
         ans.append(((int(y * 4 + 2), int(x * 4 + 2)), color))
     return ans
