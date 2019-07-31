@@ -295,7 +295,9 @@ def get_people(img, fuck_threshold):
         #     if label == t:
         #         print(X[i])
         color = kmeans.cluster_centers_[t]
-        ans.append(((int(y * 4 + 2), int(x * 4 + 2)), color))
+        xx = int(img.shape[0] - (x * 4 + 2))
+        yy = int(img.shape[1] - (y * 4 + 2))
+        ans.append(((yy, xx), color))
     return ans
 
 
