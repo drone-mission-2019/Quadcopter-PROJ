@@ -4,3 +4,6 @@
 .ipynb_checkpoints
 *.iml
 temp.py
+*.jpg
+*.jpeg
+*.png
