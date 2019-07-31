@@ -139,10 +139,10 @@ def get_E_or_T(img):
 #
 def get_people(img, fuck_threshold):
     img2 = img.copy()
-    img2[(img2[:, :, 0] == 112) * (img2[:, :, 1] == 160) * (img2[:, :, 2] == 202)] = [255, 255, 255]
-    img2 = cv2.resize(img.copy(), (320, 180))
-    # print(img2.shape)
+    img2 = rotate(img2, 180).copy()
     # show_image(img2)
+    img2[(img2[:, :, 0] == 112) * (img2[:, :, 1] == 160) * (img2[:, :, 2] == 202)] = [255, 255, 255]
+    img2 = cv2.resize(img2.copy(), (320, 180))
     visit = np.zeros((img2.shape[0], img2.shape[1]))
     belong = np.zeros(visit.shape)
     cnt = 0
